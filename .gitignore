@@ -1,0 +1,10 @@
+__pycache__/
+*.pyc
+portfolio.json
+portfolio.txt
+portfolio.csv
+cli_out.txt
+cli_err.txt
+adv_test.txt
+adv_test.csv
+gui_test.csv

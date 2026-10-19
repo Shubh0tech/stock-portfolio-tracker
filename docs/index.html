@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Stock Portfolio Tracker</title>
+<style>
+:root{--bg:#0B0E1A;--panel:#141A2E;--panel2:#1C2440;--line:#2A3357;--text:#EDF1FF;--dim:#8A94B8;--green:#00E5A0;--cyan:#22D3EE;--blue:#4DA3FF;--purple:#A78BFA;--yellow:#FFB84D;--red:#FF4D6D}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:"Segoe UI",system-ui,sans-serif;min-height:100vh}
+.wrap{max-width:1180px;margin:0 auto;padding:22px 20px 40px}
+header{display:flex;align-items:center;gap:12px;margin-bottom:18px}
+.logo{font-size:26px;color:var(--green)}
+h1{font-size:24px}
+.sub{color:var(--dim);font-size:12px}
+.clock{margin-left:auto;color:var(--yellow);font-family:Consolas,monospace}
+.grid{display:grid;grid-template-columns:330px 1fr;gap:16px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px}
+.card h2{font-size:13px;color:var(--green);margin-bottom:12px;letter-spacing:.5px}
+label{display:block;font-size:10px;color:var(--dim);margin:10px 0 4px;letter-spacing:.5px}
+input,select{width:100%;background:#0E1326;color:var(--text);border:1px solid var(--line);border-radius:8px;padding:10px;font-family:Consolas,monospace;font-size:14px;outline:none}
+input:focus,select:focus{border-color:var(--green)}
+select option{background:#0E1326}
+.btn{display:block;width:100%;border:0;border-radius:8px;padding:10px;margin-top:10px;font-weight:700;font-size:13px;cursor:pointer;font-family:inherit;transition:filter .15s}
+.btn:hover{filter:brightness(1.25)}
+.b-buy{background:var(--green);color:#06251B}
+.b-sell{background:var(--yellow);color:#2A1B05}
+.b-clear{background:#2A1220;color:#FF7C93}
+.b-live{background:var(--cyan);color:#072430}
+.b-txt{background:var(--blue);color:#0A1B33}
+.b-csv{background:var(--yellow);color:#2A1B05}
+.chips{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:8px}
+.chip{display:flex;justify-content:space-between;background:var(--panel2);border-radius:7px;padding:7px 10px;font-size:12px;cursor:pointer}
+.chip:hover{background:#243055}
+.chip b{font-family:Consolas,monospace}
+.chip span{color:var(--green);font-family:Consolas,monospace}
+.stats{display:grid;grid-template-columns:1fr auto;gap:16px;margin-bottom:16px}
+.total{font-size:38px;font-weight:800;color:var(--green);font-family:Consolas,monospace}
+.pnl{font-size:16px;font-weight:700;margin:4px 0}
+.up{color:var(--green)}.down{color:var(--red)}.flat{color:var(--dim)}
+.meta{color:var(--cyan);font-size:12px}
+.donutbox{text-align:center}
+.donutbox h2{color:var(--dim)}
+canvas{background:var(--panel);border-radius:10px}
+.legend{font-family:Consolas,monospace;font-size:11px;text-align:left;margin-top:8px}
+.legend div{display:flex;align-items:center;gap:6px;margin:2px 0}
+.sw{width:10px;height:10px;border-radius:3px;display:inline-block}
+table{width:100%;border-collapse:collapse;font-family:Consolas,monospace;font-size:13px}
+th{color:var(--cyan);text-align:right;padding:8px;border-bottom:1px solid var(--line);font-size:11px}
+th:first-child,td:first-child{text-align:left}
+td{padding:9px 8px;text-align:right;border-bottom:1px solid rgba(42,51,87,.5)}
+tr.up td{background:rgba(0,229,160,.07)}
+tr.down td{background:rgba(255,77,109,.07)}
+.rowbtn{background:#2A1220;color:#FF7C93;border:0;border-radius:6px;padding:4px 8px;cursor:pointer;font-size:11px}
+.rowbtn:hover{background:var(--red);color:#fff}
+.empty{color:var(--dim);text-align:center;padding:30px}
+footer{margin-top:18px;color:var(--dim);font-size:12px;text-align:center}
+footer a{color:var(--cyan)}
+@media(max-width:900px){.grid{grid-template-columns:1fr}.stats{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <div class="logo">&#9650;</div>
+  <div>
+    <h1>STOCK PORTFOLIO TRACKER</h1>
+    <div class="sub">cost basis &bull; profit &amp; loss &bull; donut chart &bull; auto-save</div>
+  </div>
+  <div class="clock" id="clock"></div>
+</header>
+
+<div class="grid">
+  <div>
+    <div class="card">
+      <h2>&#128200; BUY / SELL</h2>
+      <label>STOCK SYMBOL</label>
+      <select id="sym"></select>
+      <label>QUANTITY</label>
+      <input id="qty" type="number" min="0" step="any" placeholder="e.g. 5">
+      <label>BUY COST / SHARE (blank = current price)</label>
+      <input id="cost" type="number" min="0" step="any" placeholder="optional">
+      <button class="btn b-buy" onclick="buyStock()">&#9654; BUY</button>
+      <button class="btn b-sell" onclick="sellStock()">&#9664; SELL SELECTED</button>
+      <button class="btn b-clear" onclick="clearAll()">&#10005; CLEAR ALL</button>
+    </div>
+    <div class="card" style="margin-top:16px">
+      <h2>&#128202; PRICE BOARD <span id="src" style="color:var(--dim);font-size:10px"></span></h2>
+      <div class="chips" id="chips"></div>
+    </div>
+  </div>
+
+  <div>
+    <div class="stats">
+      <div class="card">
+        <div style="font-size:10px;color:var(--dim);letter-spacing:.5px">TOTAL PORTFOLIO VALUE</div>
+        <div class="total" id="total">$0.00</div>
+        <div class="pnl" id="pnl">Profit/Loss +$0.00 (+0.00%)</div>
+        <div class="meta" id="meta"></div>
+      </div>
+      <div class="card donutbox">
+        <h2>ALLOCATION</h2>
+        <canvas id="donut" width="150" height="150"></canvas>
+        <div class="legend" id="legend"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <table>
+        <thead><tr>
+          <th>STOCK</th><th>PRICE</th><th>AVG COST</th><th>QTY</th>
+          <th>VALUE</th><th>P/L</th><th>SHARE</th><th></th>
+        </tr></thead>
+        <tbody id="rows"></tbody>
+      </table>
+      <div class="empty" id="empty">No holdings yet &mdash; buy some stocks to begin!</div>
+    </div>
+
+    <div style="display:flex;gap:8px;margin-top:14px">
+      <button class="btn b-live" style="margin:0" onclick="livePrices()">&#128260; LIVE PRICES</button>
+      <button class="btn b-txt" style="margin:0" onclick="saveFile('txt')">&#128190; SAVE .TXT</button>
+      <button class="btn b-csv" style="margin:0" onclick="saveFile('csv')">&#128230; SAVE .CSV</button>
+      <div class="meta" id="status" style="align-self:center;margin-left:auto"></div>
+    </div>
+  </div>
+</div>
+
+<footer>Python desktop app + this web version &mdash; source on <a href="https://github.com/Shubh0tech/stock-portfolio-tracker">GitHub</a></footer>
+</div>
+<script>
+// ====== HARDCODED PRICE DICTIONARY (same as the Python app) ======
+const STOCK_PRICES = {AAPL:180,TSLA:250,MSFT:420,GOOGL:175,AMZN:190,NVDA:130,META:560,NFLX:700,INFY:1900,RELIANCE:2950};
+const YAHOO_SYMBOLS = {AAPL:"AAPL",TSLA:"TSLA",MSFT:"MSFT",GOOGL:"GOOGL",AMZN:"AMZN",NVDA:"NVDA",META:"META",NFLX:"NFLX",INFY:"INFY.NS",RELIANCE:"RELIANCE.NS"};
+const COLORS = ["#00E5A0","#4DA3FF","#A78BFA","#FFB84D","#FF5C7A","#22D3EE","#F472B6","#34D399"];
+const PRICES = Object.assign({}, STOCK_PRICES);
+let portfolio = {};   // {AAPL: {qty, avg}}
+let realized = 0;
+let selected = null;
+
+// ====== persistence (localStorage) ======
+function save(){ localStorage.setItem("portfolio", JSON.stringify({portfolio, realized})); }
+function load(){
+  try{
+    const d = JSON.parse(localStorage.getItem("portfolio")||"{}");
+    portfolio = d.portfolio||{}; realized = d.realized||0;
+  }catch(e){ portfolio={}; realized=0; }
+}
+
+// ====== basic arithmetic ======
+const hv = (s,q)=> PRICES[s]*q;
+const tv = ()=> Object.entries(portfolio).reduce((a,[s,d])=>a+hv(s,d.qty),0);
+const tc = ()=> Object.values(portfolio).reduce((a,d)=>a+d.qty*d.avg,0);
+const fmt = n => "$"+n.toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2});
+
+// ====== buy / sell ======
+function buyStock(){
+  const sym = document.getElementById("sym").value;
+  const qty = parseFloat(document.getElementById("qty").value);
+  const raw = document.getElementById("cost").value;
+  if(!(qty>0)) return flash("Quantity must be a positive number");
+  const cost = raw==="" ? PRICES[sym] : parseFloat(raw);
+  if(!(cost>0)) return flash("Buy cost must be a positive number");
+  if(portfolio[sym]){
+    const p = portfolio[sym];
+    p.avg = (p.qty*p.avg + qty*cost)/(p.qty+qty);
+    p.qty += qty;
+  } else portfolio[sym] = {qty, avg:cost};
+  save(); flash(`Bought ${qty} ${sym} @ ${fmt(cost)}`);
+  document.getElementById("qty").value = "";
+  render();
+}
+function sellStock(){
+  if(!selected || !portfolio[selected]) return flash("Click a row in the table first");
+  const p = portfolio[selected];
+  const qty = parseFloat(document.getElementById("qty").value);
+  if(!(qty>0) || qty>p.qty) return flash(`Enter a quantity between 1 and ${p.qty}`);
+  realized += (PRICES[selected]-p.avg)*qty;
+  p.qty -= qty;
+  if(p.qty<=1e-9) delete portfolio[selected];
+  selected = null;
+  save(); flash(`Sold ${qty} — realized P/L ${fmt(realized)} total`);
+  render();
+}
+function clearAll(){
+  if(!Object.keys(portfolio).length) return flash("Portfolio is already empty");
+  if(confirm("Remove ALL holdings? (keeps realized P/L)")){
+    portfolio={}; save(); flash("Portfolio cleared"); render();
+  }
+}
+function removeSym(sym){ delete portfolio[sym]; save(); flash(sym+" removed"); render(); }
+
+// ====== live prices ======
+async function livePrices(){
+  flash("Fetching live prices...");
+  const entries = await Promise.allSettled(Object.entries(YAHOO_SYMBOLS).map(async ([s,t])=>{
+    const r = await fetch(`https://query1.finance.yahoo.com/v8/finance/chart/${t}?interval=1d&range=1d`);
+    if(!r.ok) throw 0;
+    const j = await r.json();
+    return [s, j.chart.result[0].meta.regularMarketPrice];
+  }));
+  let n=0;
+  for(const e of entries) if(e.status==="fulfilled" && e.value[1]>0){ PRICES[e.value[0]]=e.value[1]; n++; }
+  document.getElementById("src").textContent = n ? `(live: ${n} via Yahoo)` : "(offline: manual prices)";
+  flash(n ? `Live prices updated (${n} stocks)` : "Offline — using manual prices");
+  render();
+}
+
+// ====== export (file handling) ======
+function saveFile(kind){
+  if(!Object.keys(portfolio).length) return flash("Add at least one holding before saving");
+  const rows = Object.entries(portfolio).sort((a,b)=>hv(b[0],b[1].qty)-hv(a[0],a[1].qty));
+  let content, mime;
+  if(kind==="csv"){
+    content = "Stock,Price,AvgCost,Quantity,Value,Invested,ProfitLoss\n";
+    for(const [s,d] of rows) content += `${s},${PRICES[s]},${d.avg.toFixed(2)},${d.qty},${hv(s,d.qty).toFixed(2)},${(d.qty*d.avg).toFixed(2)},${(hv(s,d.qty)-d.qty*d.avg).toFixed(2)}\n`;
+    content += `TOTAL,,,,${tv().toFixed(2)},${tc().toFixed(2)},${(tv()-tc()).toFixed(2)}\n`;
+    mime = "text/csv";
+  } else {
+    const line = "=".repeat(70);
+    content = line+"\n        STOCK PORTFOLIO - INVESTMENT REPORT\n"+line+"\n";
+    content += `${"Stock".padEnd(10)}${"Price".padStart(9)}${"AvgCost".padStart(10)}${"Qty".padStart(7)}${"Value".padStart(11)}${"P/L".padStart(11)}\n`+"-".repeat(70)+"\n";
+    for(const [s,d] of rows) content += `${s.padEnd(10)}${PRICES[s].toFixed(2).padStart(9)}${d.avg.toFixed(2).padStart(10)}${String(d.qty).padStart(7)}${hv(s,d.qty).toFixed(2).padStart(11)}${(hv(s,d.qty)-d.qty*d.avg).toFixed(2).padStart(11)}\n`;
+    content += "-".repeat(70)+"\n";
+    content += `${"TOTAL".padEnd(47)}${tv().toFixed(2).padStart(11)}\n`;
+    content += `Invested: ${fmt(tc())}   Unrealized P/L: ${fmt(tv()-tc())}   Realized P/L: ${fmt(realized)}\n`+line+"\n";
+    mime = "text/plain";
+  }
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([content], {type:mime}));
+  a.download = `portfolio.${kind}`;
+  a.click();
+  flash(`Saved portfolio.${kind}`);
+}
+let flashTimer;
+function flash(msg){
+  const el = document.getElementById("status");
+  el.textContent = msg;
+  clearTimeout(flashTimer);
+  flashTimer = setTimeout(()=>el.textContent="", 4000);
+}
+
+// ====== rendering ======
+function render(){
+  const total = tv(), cost = tc(), pnl = total - cost;
+  const pct = cost ? pnl/cost*100 : 0;
+  document.getElementById("total").textContent = fmt(total);
+  const pnlEl = document.getElementById("pnl");
+  pnlEl.textContent = `Profit/Loss ${pnl>=0?"+":""}${fmt(pnl)} (${pnl>=0?"+":""}${pct.toFixed(2)}%)`;
+  pnlEl.className = "pnl " + (pnl>0.005 ? "up" : pnl < -0.005 ? "down" : "flat");
+  const qs = Object.values(portfolio).reduce((a,d)=>a+d.qty,0);
+  document.getElementById("meta").textContent =
+    `cost ${fmt(cost)} • realized ${fmt(realized)} • ${Object.keys(portfolio).length} holdings • ${qs} shares`;
+
+  const rows = Object.entries(portfolio).sort((a,b)=>hv(b[0],b[1].qty)-hv(a[0],a[1].qty));
+  const tb = document.getElementById("rows");
+  tb.innerHTML = "";
+  document.getElementById("empty").style.display = rows.length ? "none" : "block";
+  for(const [s,d] of rows){
+    const val = hv(s,d.qty), hp = val - d.qty*d.avg;
+    const share = total ? val/total*100 : 0;
+    const tr = document.createElement("tr");
+    tr.className = hp>0.005 ? "up" : hp<-0.005 ? "down" : "";
+    tr.style.cursor = "pointer";
+    if(s===selected) tr.style.outline = "1px solid var(--cyan)";
+    tr.onclick = ()=>{ selected = s; document.getElementById("sym").value = s; render(); };
+    tr.innerHTML = `<td><b>${s}</b></td><td>${fmt(PRICES[s])}</td><td>${fmt(d.avg)}</td>`+
+      `<td>${d.qty}</td><td>${fmt(val)}</td>`+
+      `<td class="${hp>=0?"up":"down"}">${hp>=0?"+":""}${fmt(hp)}</td>`+
+      `<td>${share.toFixed(1)}%</td>`+
+      `<td><button class="rowbtn" onclick="event.stopPropagation();removeSym('${s}')">&#10005;</button></td>`;
+    tb.appendChild(tr);
+  }
+  drawDonut(rows, total);
+}
+
+function drawDonut(rows, total){
+  const c = document.getElementById("donut"), ctx = c.getContext("2d");
+  ctx.clearRect(0,0,150,150);
+  const legend = document.getElementById("legend");
+  legend.innerHTML = "";
+  if(!rows.length || total<=0){
+    ctx.fillStyle = "#8A94B8"; ctx.font = "12px Consolas";
+    ctx.textAlign = "center"; ctx.fillText("NO DATA", 75, 80);
+    return;
+  }
+  let start = -Math.PI/2;
+  rows.slice(0,8).forEach(([s,d],i)=>{
+    const frac = hv(s,d.qty)/total;
+    const end = start + frac*Math.PI*2;
+    ctx.beginPath();
+    ctx.arc(75,75,58,start+0.015,end-0.015);
+    ctx.arc(75,75,38,end-0.015,start+0.015,true);
+    ctx.closePath();
+    ctx.fillStyle = COLORS[i%COLORS.length];
+    ctx.fill();
+    const div = document.createElement("div");
+    div.innerHTML = `<span class="sw" style="background:${COLORS[i%COLORS.length]}"></span> ${s} ${(frac*100).toFixed(1)}%`;
+    legend.appendChild(div);
+    start = end;
+  });
+  ctx.fillStyle = "#8A94B8"; ctx.font = "9px Segoe UI"; ctx.textAlign = "center";
+  ctx.fillText("TOTAL", 75, 71);
+  ctx.fillStyle = "#EDF1FF"; ctx.font = "bold 12px Consolas";
+  ctx.fillText("$"+total.toLocaleString("en-US",{maximumFractionDigits:0}), 75, 86);
+}
+
+function buildBoard(){
+  const sel = document.getElementById("sym");
+  const chips = document.getElementById("chips");
+  sel.innerHTML = ""; chips.innerHTML = "";
+  for(const s of Object.keys(STOCK_PRICES)){
+    const o = document.createElement("option");
+    o.value = s; o.textContent = `${s} — $${PRICES[s].toLocaleString()}`;
+    sel.appendChild(o);
+    const div = document.createElement("div");
+    div.className = "chip";
+    div.innerHTML = `<b>${s}</b><span id="chip-${s}">$${PRICES[s].toLocaleString()}</span>`;
+    div.onclick = ()=>{ sel.value = s; document.getElementById("qty").focus(); };
+    chips.appendChild(div);
+  }
+}
+function updateChips(){
+  for(const s of Object.keys(STOCK_PRICES)){
+    const el = document.getElementById("chip-"+s);
+    if(el) el.textContent = "$"+PRICES[s].toLocaleString(undefined,{maximumFractionDigits:2});
+  }
+  const sel = document.getElementById("sym");
+  for(const o of sel.options) o.textContent = `${o.value} — $${PRICES[o.value].toLocaleString()}`;
+}
+function tick(){
+  document.getElementById("clock").textContent =
+    new Date().toLocaleString("en-GB",{day:"2-digit",month:"short",year:"numeric",hour:"2-digit",minute:"2-digit",second:"2-digit"});
+}
+
+load();
+buildBoard();
+render();
+tick();
+setInterval(tick, 1000);
+const _livePrices = livePrices;
+livePrices = async ()=>{ await _livePrices(); updateChips(); };
+</script>
+</body>
+</html>
